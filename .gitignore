@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+venv/
+.env
+
+# Vector DB
+vectorstore/
+
+# Temp files
+temp/
+
+# OS
+.DS_Store
