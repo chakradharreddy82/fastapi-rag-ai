@@ -5,7 +5,7 @@ langchain-community==0.3.31
 langchain-core==0.3.83
 langchain-mistralai==0.2.12
 sentence-transformers==2.7.0
-faiss-cpu==1.7.4
+faiss-cpu==1.13.2
 pypdf==6.7.3
 python-dotenv==1.2.1
 python-multipart==0.0.20
