@@ -11,8 +11,5 @@ venv/
 # Vector DB
 vectorstore/
 
-# Temp files
-temp/
-
 # OS
 .DS_Store
