@@ -63,7 +63,12 @@ async def ask_question(req: QuestionRequest):
     metrics_store.incr("requests_total")
 
     violation = detect_guardrail_violation(req.question)
-
+    latency_ms = (time.time() - start_time) * 1000
+    metrics_store.record_latency(latency_ms)
+    tier_info = classify_tier(req.question)
+    target_tier = tier_info["tier"]
+    needs_escalation = tier_info["needs_escalation"]
+    
     if violation:
         metrics_store.incr("guardrail_blocks")
         metrics_store.incr("escalations_triggered")
