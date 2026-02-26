@@ -8,8 +8,5 @@ __pycache__/
 venv/
 .env
 
-# Vector DB
-vectorstore/
-
 # OS
 .DS_Store
