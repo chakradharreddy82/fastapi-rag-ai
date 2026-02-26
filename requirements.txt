@@ -51,9 +51,11 @@ opentelemetry-sdk==1.38.0
 opentelemetry-semantic-conventions==0.59b0
 orjson==3.11.5
 packaging==25.0
+pgvector==0.2.5
 pillow==11.3.0
 propcache==0.4.1
 protobuf==6.33.5
+psycopg2-binary==2.9.9
 pydantic==2.12.5
 pydantic-settings==2.11.0
 pydantic_core==2.41.5
