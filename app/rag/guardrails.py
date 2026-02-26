@@ -34,7 +34,7 @@ GUARDRAIL_PATTERNS = {
 
 
 def detect_guardrail_violation(question: str) -> Optional[Dict]:
-    q = question.lower()
+    q = question.lower().strip()
 
     for category, patterns in GUARDRAIL_PATTERNS.items():
         for pattern in patterns:
