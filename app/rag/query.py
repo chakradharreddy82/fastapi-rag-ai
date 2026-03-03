@@ -8,7 +8,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
 from langchain_mistralai import ChatMistralAI, MistralAIEmbeddings
 from langchain_community.vectorstores import PGVector
-
+from app.services.ticket_service import create_ticket_record, get_ticket
 from app.rag.guardrails import detect_guardrail_violation
 from app.rag.tier_router import classify_tier
 from app.core.metrics import metrics_store
@@ -28,6 +28,7 @@ class HelpDeskResponse(BaseModel):
     targetTier: str
     severity: str
     reason: Optional[str] = None
+    ticketId: Optional[str] = None
 
 
 class QuestionRequest(BaseModel):
@@ -57,7 +58,36 @@ async def ask_question(req: QuestionRequest):
     start_time = time.time()
     metrics_store.incr("requests_total")
 
+    clean_answer = ""
+
     violation = detect_guardrail_violation(req.question)
+    ticket_match = re.search(r"INC-[A-Z0-9]+", req.question.upper())
+    if ticket_match:
+        ticket_id = ticket_match.group(0)
+        ticket = get_ticket(ticket_id)
+
+        if ticket:
+            return HelpDeskResponse(
+                answer=(
+                    f"Ticket {ticket_id} details:\n"
+                    f"Question: {ticket['question']}\n"
+                    f"Tier: {ticket['target_tier']}\n"
+                    f"Severity: {ticket['severity']}\n"
+                    f"Execution Time: {round(ticket['execution_time_ms'],2)} ms"
+                ),
+                needsEscalation=False,
+                targetTier=ticket["target_tier"],
+                severity=ticket["severity"],
+                reason="Ticket lookup",
+            )
+        else:
+            return HelpDeskResponse(
+                answer=f"Ticket {ticket_id} not found.",
+                needsEscalation=False,
+                targetTier="Tier 0",
+                severity="LOW",
+            )
+
     tier_info = classify_tier(req.question)
     target_tier = tier_info["tier"]
     needs_escalation = tier_info["needs_escalation"]
@@ -110,10 +140,30 @@ async def ask_question(req: QuestionRequest):
     latency_ms = (time.time() - start_time) * 1000
     metrics_store.record_latency(latency_ms)
 
+    ticket_id = None
+
+    if needs_escalation:
+        metrics_store.incr("escalations_triggered")
+
+        ticket_id = create_ticket_record(
+            question=req.question,
+            answer=clean_answer,
+            tier=target_tier,
+            severity=severity_from_tier(target_tier),
+            needs_escalation=needs_escalation,
+            execution_time_ms=latency_ms,
+        )
+
+    final_answer = clean_answer
+
+    if ticket_id:
+        final_answer += f"\n\nSupport ticket created: {ticket_id}"
+
     return HelpDeskResponse(
-        answer=clean_answer,
+        answer=final_answer,
         needsEscalation=needs_escalation,
         targetTier=target_tier,
         severity=severity_from_tier(target_tier),
         reason=None,
+        ticketId=ticket_id,
     )
